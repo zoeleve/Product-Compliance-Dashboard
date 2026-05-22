@@ -1,6 +1,6 @@
 # Product Compliance Dashboard
 
-A full-stack web application for tracking and managing product compliance with EU regulations (ESPR, REACH, RoHS). Built with Django REST Framework, Next.js, Celery, Redis, and PostgreSQL. Deployed on AWS EKS with Helm and Argo CD.
+A full-stack web application for tracking and managing product compliance with EU regulations (ESPR, REACH, RoHS). Built with Django REST Framework, Next.js, Celery, Redis, and PostgreSQL. Integrates with ERP systems (Odoo) and generic CRM webhooks for enterprise data synchronisation. Deployed on AWS EKS with Helm and Argo CD.
 
 > **Status:** In development
 
@@ -25,7 +25,7 @@ A full-stack web application for tracking and managing product compliance with E
 
 ## Overview
 
-The Product Compliance Dashboard enables manufacturers and compliance teams to register products, track their regulatory status across multiple EU frameworks, and receive automated alerts when compliance status changes. The platform is designed around the requirements of the **Ecodesign for Sustainable Products Regulation (ESPR)** and integrates with the **Asset Administration Shell (AAS)** standard for data interoperability.
+The Product Compliance Dashboard enables manufacturers and compliance teams to register products, track their regulatory status across multiple EU frameworks, and receive automated alerts when compliance status changes. The platform is designed around the requirements of the **Ecodesign for Sustainable Products Regulation (ESPR)** and supports bidirectional data sync with enterprise systems such as ERP and CRM platforms.
 
 ### Who is it for?
 
@@ -49,11 +49,16 @@ The Product Compliance Dashboard enables manufacturers and compliance teams to r
 - **Redis caching** — compliance summary reports cached to reduce DB load
 - **REST API** — fully documented with Swagger (drf-spectacular)
 
+### Integrations
+- **ERP sync (Odoo)** — async product data import from Odoo via REST API, triggered manually or on schedule via Celery Beat. Products, categories, and manufacturer data are mapped to the compliance data model automatically.
+- **Generic CRM webhook** — outbound webhook notifications to any CRM platform when a product's compliance status changes. Configurable per organisation with payload mapping and retry logic.
+
 ### Frontend
 - **Compliance dashboard** — overview of all products and their current regulatory status
 - **Product management** — create, edit, and manage products with compliance attributes
 - **Regulation filter** — filter products by regulation, status, or category
 - **Notifications panel** — real-time alerts for compliance changes
+- **Integration status** — view last ERP sync time and webhook delivery status
 - **Responsive UI** — mobile-friendly design with Next.js and Tailwind CSS
 
 ### DevOps
@@ -69,33 +74,48 @@ The Product Compliance Dashboard enables manufacturers and compliance teams to r
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                        Client                           │
-│                  Next.js (Port 3000)                    │
-└─────────────────────────┬───────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                          Client                             │
+│                    Next.js (Port 3000)                      │
+└─────────────────────────┬───────────────────────────────────┘
                           │ HTTP / REST
-┌─────────────────────────▼───────────────────────────────┐
-│                Django REST Framework                     │
-│                     (Port 8000)                         │
-│  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
-│  │ Auth Module │  │  Compliance  │  │  Notification │  │
-│  │  (OAuth2.0) │  │  Controller  │  │    Service    │  │
-│  └─────────────┘  └──────────────┘  └───────────────┘  │
-└────────┬─────────────────┬───────────────────┬──────────┘
-         │                 │                   │
-┌────────▼──────┐  ┌───────▼────────┐  ┌──────▼──────────┐
-│  PostgreSQL   │  │     Redis      │  │  Celery Worker  │
-│  (Port 5432)  │  │  (Port 6379)   │  │  + Beat Scheduler│
-│  Main DB      │  │  Cache+Broker  │  │  Async Tasks    │
-└───────────────┘  └────────────────┘  └─────────────────┘
+┌─────────────────────────▼───────────────────────────────────┐
+│                  Django REST Framework                       │
+│                       (Port 8000)                           │
+│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────────┐ │
+│  │ Auth Module │  │  Compliance  │  │  Notification       │ │
+│  │  (OAuth2.0) │  │  Controller  │  │  Service            │ │
+│  └─────────────┘  └──────────────┘  └─────────────────────┘ │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              Integration Layer                        │   │
+│  │   ERP Connector (Odoo)   CRM Webhook Dispatcher      │   │
+│  └──────────────────────────────────────────────────────┘   │
+└────────┬─────────────────┬────────────────────┬─────────────┘
+         │                 │                    │
+┌────────▼──────┐  ┌───────▼────────┐  ┌───────▼─────────────┐
+│  PostgreSQL   │  │     Redis      │  │   Celery Worker      │
+│  (Port 5432)  │  │  (Port 6379)   │  │   + Beat Scheduler   │
+│  Main DB      │  │  Cache+Broker  │  │   ERP sync tasks     │
+└───────────────┘  └────────────────┘  │   Compliance checks  │
+                                        │   Webhook retries    │
+                                        └──────────┬──────────┘
+                                                   │
+                          ┌────────────────────────┼───────────────────┐
+                          │                        │                   │
+                  ┌───────▼──────┐        ┌────────▼──────┐           │
+                  │   Odoo ERP   │        │  CRM Platform  │           │
+                  │  (REST API)  │        │  (Webhook)     │           │
+                  └──────────────┘        └───────────────┘           │
 ```
 
 ### Key Design Decisions
 
 - **Django REST Framework** chosen for its mature ecosystem, built-in RBAC support, and excellent integration with Celery and Redis.
 - **Redis** serves dual purpose: Celery message broker for async task queue, and caching layer for compliance summary reports.
-- **Celery Beat** handles scheduled compliance re-evaluation tasks (configurable interval per regulation).
-- **Next.js** used over plain React for SSR support, improved SEO, and file-based routing — reducing frontend complexity.
+- **Celery Beat** handles both scheduled compliance re-evaluation and periodic ERP sync tasks, with configurable intervals.
+- **Integration Layer** is decoupled from core business logic — ERP and CRM connectors are independent Django apps, making it easy to add new integrations without touching compliance logic.
+- **Generic CRM webhook** design allows any CRM to receive compliance change events without platform-specific implementation — payload structure is configurable per organisation.
+- **Next.js** used over plain React for SSR support, improved SEO, and file-based routing, reducing frontend complexity.
 - **PostgreSQL** with structured schema for compliance records, enabling complex queries across regulations and product categories.
 
 ---
@@ -107,9 +127,11 @@ The Product Compliance Dashboard enables manufacturers and compliance teams to r
 | Backend Framework | Django 5.x + DRF | REST API, business logic |
 | Frontend | Next.js 14 + Tailwind CSS | UI, SSR |
 | Authentication | OAuth 2.0 (Google) + JWT | Auth via django-allauth |
-| Task Queue | Celery + Redis | Async compliance checks |
+| Task Queue | Celery + Redis | Async compliance checks, ERP sync, webhook retries |
 | Cache | Redis | Report caching |
 | Database | PostgreSQL 16 | Main data store |
+| ERP Integration | Odoo REST API | Product data sync |
+| CRM Integration | Generic Webhook | Outbound compliance change notifications |
 | API Docs | drf-spectacular (Swagger) | Auto-generated docs |
 | Containerisation | Docker + Docker Compose | Local development |
 | Orchestration | Kubernetes (AWS EKS) | Production deployment |
@@ -131,6 +153,9 @@ product-compliance-dashboard/
 │   │   ├── products/            # Product CRUD, compliance records
 │   │   ├── compliance/          # Regulation models, status engine
 │   │   ├── notifications/       # Async notification service
+│   │   ├── integrations/        # Integration layer
+│   │   │   ├── erp/             # Odoo connector (REST client, field mapping)
+│   │   │   └── crm/             # Generic webhook dispatcher + retry logic
 │   │   └── api/                 # DRF routers, serializers, views
 │   ├── celery_app/              # Celery config and scheduled tasks
 │   ├── tests/                   # pytest test suite
@@ -140,7 +165,8 @@ product-compliance-dashboard/
 │   ├── app/                     # Next.js app router
 │   │   ├── dashboard/           # Main compliance dashboard
 │   │   ├── products/            # Product management pages
-│   │   └── notifications/       # Notifications panel
+│   │   ├── notifications/       # Notifications panel
+│   │   └── integrations/        # ERP sync status, webhook config
 │   ├── components/              # Reusable UI components
 │   ├── lib/                     # API client, auth helpers
 │   ├── Dockerfile
@@ -178,6 +204,7 @@ product-compliance-dashboard/
 - Python 3.11+
 - Node.js 20+
 - Google OAuth credentials (for authentication)
+- Odoo instance (local or cloud) for ERP integration (optional)
 
 ### Local Development
 
@@ -289,6 +316,17 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_HOST_USER=your-email
 EMAIL_HOST_PASSWORD=your-app-password
+
+# ERP Integration (Odoo)
+ODOO_URL=http://your-odoo-instance
+ODOO_DB=your-odoo-db
+ODOO_USERNAME=your-odoo-user
+ODOO_API_KEY=your-odoo-api-key
+ERP_SYNC_INTERVAL_MINUTES=60
+
+# CRM Webhook
+CRM_WEBHOOK_TIMEOUT_SECONDS=10
+CRM_WEBHOOK_MAX_RETRIES=3
 ```
 
 ### Frontend (`frontend/.env.local`)
@@ -319,6 +357,11 @@ The REST API is fully documented via Swagger UI at `/api/schema/swagger-ui`.
 | `GET` | `/api/compliance/regulations/` | List regulations | Yes |
 | `GET` | `/api/notifications/` | Get user notifications | Yes |
 | `POST` | `/api/notifications/{id}/read/` | Mark as read | Yes |
+| `POST` | `/api/integrations/erp/sync/` | Trigger manual ERP sync | Yes (Admin) |
+| `GET` | `/api/integrations/erp/status/` | Last sync status and timestamp | Yes |
+| `POST` | `/api/integrations/crm/webhooks/` | Register a CRM webhook | Yes (Admin) |
+| `GET` | `/api/integrations/crm/webhooks/` | List registered webhooks | Yes (Admin) |
+| `DELETE` | `/api/integrations/crm/webhooks/{id}/` | Remove a webhook | Yes (Admin) |
 
 ---
 
@@ -430,6 +473,10 @@ readinessProbe:
 ![Compliance Detail](docs/screenshots/compliance-detail.png)
 *Per-product compliance status across ESPR, REACH, and RoHS*
 
+### ERP Sync and Integration Status
+![Integrations](docs/screenshots/integrations.png)
+*ERP sync status, last run timestamp, and CRM webhook configuration*
+
 ### Notifications Panel
 ![Notifications](docs/screenshots/notifications.png)
 *Real-time alerts for compliance status changes*
@@ -446,12 +493,11 @@ readinessProbe:
 
 ## Roadmap
 
-- [ ] AAS (Asset Administration Shell) export for DPP interoperability
-- [ ] SPARQL-based semantic search for compliance attributes
-- [ ] Webhook support for third-party integrations
-- [ ] Multi-tenancy support
-- [ ] Audit log with full change history
+- [ ] Webhook support for additional third-party integrations
+- [ ] Multi-tenancy support for SaaS deployment
+- [ ] Audit log with full change history per product
 - [ ] PDF compliance report export
+- [ ] SAP ERP connector
 
 ---
 
