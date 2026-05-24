@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "product-compliance-dashboard"
+version = "0.1.0"
+description = "Product Compliance Dashboard Backend"
+requires-python = ">=3.11"
+dependencies = [
+    "django>=5.0,<6.0",
+    "djangorestframework>=3.15",
+    "celery>=5.3",
+    "redis>=5.0",
+    "psycopg2-binary>=2.9",
+    "django-allauth>=0.61",
+    "djangorestframework-simplejwt>=5.3",
+    "drf-spectacular>=0.27",
+    "django-filter>=23.5",
+    "django-celery-beat>=2.6",
+    "requests>=2.31",
+    "gunicorn>=21.2",
+    "python-decouple>=3.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.0",
+    "ruff>=0.3",
+    "mypy>=1.9",
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "pytest-cov>=5.0",
+    "factory-boy>=3.3",
+    "responses>=0.25",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["tests/test_*.py"]
+addopts = "--reuse-db"
+
