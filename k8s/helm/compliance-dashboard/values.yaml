@@ -1,0 +1,58 @@
+replicaCount:
+  backend: 2
+  frontend: 2
+  celery: 1
+  celeryBeat: 1
+
+backend:
+  image:
+    repository: your-ecr-repo/compliance-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8000
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "256Mi"
+    limits:
+      cpu: "1000m"
+      memory: "512Mi"
+
+frontend:
+  image:
+    repository: your-ecr-repo/compliance-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 3000
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+
+celery:
+  image:
+    repository: your-ecr-repo/compliance-backend
+    tag: latest
+
+ingress:
+  enabled: true
+  host: compliance.example.com
+  tlsSecretName: compliance-tls
+
+env:
+  DJANGO_SETTINGS_MODULE: config.settings.prod
+  POSTGRES_HOST: compliance-postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: compliance_db
+  REDIS_URL: redis://compliance-redis:6379/0
+  CELERY_BROKER_URL: redis://compliance-redis:6379/0
+  CELERY_RESULT_BACKEND: redis://compliance-redis:6379/0
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70

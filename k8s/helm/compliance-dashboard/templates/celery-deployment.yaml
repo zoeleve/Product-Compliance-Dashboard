@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-celery-worker
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount.celery }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-celery-worker
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-celery-worker
+    spec:
+      containers:
+        - name: celery-worker
+          image: "{{ .Values.celery.image.repository }}:{{ .Values.celery.image.tag }}"
+          command: ["celery", "-A", "celery_app.app", "worker", "--loglevel=info"]
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-config
+            - secretRef:
+                name: {{ .Release.Name }}-secrets
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-celery-beat
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount.celeryBeat }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-celery-beat
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-celery-beat
+    spec:
+      containers:
+        - name: celery-beat
+          image: "{{ .Values.celery.image.repository }}:{{ .Values.celery.image.tag }}"
+          command:
+            - celery
+            - -A
+            - celery_app.app
+            - beat
+            - --loglevel=info
+            - --scheduler
+            - django_celery_beat.schedulers:DatabaseScheduler
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-config
+            - secretRef:
+                name: {{ .Release.Name }}-secrets
