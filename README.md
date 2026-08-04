@@ -361,11 +361,13 @@ sequenceDiagram
     U->>B: Click "Continue with Google"
     B->>G: 1. Sign in with Google
     G-->>B: 2. id_token (OIDC)
-    B->>D: 3. POST /api/auth/google/ { id_token }
-    Note over D: verify id_token signature & audience<br/>against GOOGLE_CLIENT_ID (google-auth)<br/>get_or_create User by verified email<br/>issue SimpleJWT access + refresh tokens
-    D-->>B: 4. { access, refresh, user }
+    B->>D: 3. POST /api/auth/google/ with id_token
+    Note over D: verify id_token signature and audience against GOOGLE_CLIENT_ID
+    Note over D: get_or_create User by verified email
+    Note over D: issue SimpleJWT access and refresh tokens
+    D-->>B: 4. access, refresh and user
     B->>N: store Django access token
-    Note over N: attached as Authorization: Bearer &lt;token&gt;<br/>on every API request (lib/api.ts)
+    Note over N: attached as a Bearer token on every API request
 ```
 
 1. The user clicks **Continue with Google** on `/login` (`next-auth` `signIn("google")`).
