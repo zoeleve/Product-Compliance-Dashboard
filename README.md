@@ -73,39 +73,37 @@ The Product Compliance Dashboard enables manufacturers and compliance teams to r
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                          Client                             │
-│                    Next.js (Port 3000)                      │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ HTTP / REST
-┌─────────────────────────▼───────────────────────────────────┐
-│                  Django REST Framework                       │
-│                       (Port 8000)                           │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────────┐ │
-│  │ Auth Module │  │  Compliance  │  │  Notification       │ │
-│  │  (OAuth2.0) │  │  Controller  │  │  Service            │ │
-│  └─────────────┘  └──────────────┘  └─────────────────────┘ │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │              Integration Layer                        │   │
-│  │   ERP Connector (Odoo)   CRM Webhook Dispatcher      │   │
-│  └──────────────────────────────────────────────────────┘   │
-└────────┬─────────────────┬────────────────────┬─────────────┘
-         │                 │                    │
-┌────────▼──────┐  ┌───────▼────────┐  ┌───────▼─────────────┐
-│  PostgreSQL   │  │     Redis      │  │   Celery Worker      │
-│  (Port 5432)  │  │  (Port 6379)   │  │   + Beat Scheduler   │
-│  Main DB      │  │  Cache+Broker  │  │   ERP sync tasks     │
-└───────────────┘  └────────────────┘  │   Compliance checks  │
-                                        │   Webhook retries    │
-                                        └──────────┬──────────┘
-                                                   │
-                          ┌────────────────────────┼───────────────────┐
-                          │                        │                   │
-                  ┌───────▼──────┐        ┌────────▼──────┐           │
-                  │   Odoo ERP   │        │  CRM Platform  │           │
-                  │  (REST API)  │        │  (Webhook)     │           │
-                  └──────────────┘        └───────────────┘           │
+```mermaid
+flowchart TD
+    Client["Client<br/>Next.js · Port 3000"]
+
+    subgraph API["Django REST Framework · Port 8000"]
+        Auth["Auth Module<br/>OAuth2.0 + JWT"]
+        Compliance["Compliance<br/>Controller"]
+        Notify["Notification<br/>Service"]
+        subgraph Integrations["Integration Layer"]
+            ERPConn["ERP Connector<br/>(Odoo)"]
+            CRMDisp["CRM Webhook<br/>Dispatcher"]
+        end
+    end
+
+    Postgres[("PostgreSQL<br/>Port 5432<br/>Main DB")]
+    Redis[("Redis<br/>Port 6379<br/>Cache + Broker")]
+    Celery["Celery Worker + Beat<br/>ERP sync · Compliance checks · Webhook retries"]
+
+    OdooERP["Odoo ERP<br/>(REST API)"]
+    CRMPlatform["CRM Platform<br/>(Webhook)"]
+
+    Client -- "HTTP / REST" --> API
+
+    API --> Postgres
+    API --> Redis
+    API --> Celery
+
+    Celery --> ERPConn
+    Celery --> CRMDisp
+    ERPConn <-- "sync" --> OdooERP
+    CRMDisp -- "webhook" --> CRMPlatform
 ```
 
 ### Key Design Decisions
