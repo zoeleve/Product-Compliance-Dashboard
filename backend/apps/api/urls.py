@@ -1,11 +1,12 @@
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from apps.integrations.erp.views import ErpSyncView, ErpStatusView
-from apps.accounts.views import UserProfileView
+from apps.accounts.views import GoogleLoginView, UserProfileView
 from .routers import router
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("auth/google/", GoogleLoginView.as_view(), name="google-login"),
     path("auth/token/", TokenObtainPairView.as_view(), name="token-obtain"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
     path("auth/profile/", UserProfileView.as_view(), name="user-profile"),

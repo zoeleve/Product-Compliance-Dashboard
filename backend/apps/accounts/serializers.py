@@ -2,6 +2,10 @@ from rest_framework import serializers
 from .models import User
 
 
+class GoogleAuthSerializer(serializers.Serializer):
+    id_token = serializers.CharField(write_only=True)
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

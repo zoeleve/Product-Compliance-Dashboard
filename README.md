@@ -334,7 +334,60 @@ CRM_WEBHOOK_MAX_RETRIES=3
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000/api
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
+
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-nextauth-secret
+
+# OAuth2.0 - Google (server-side, used by the NextAuth GoogleProvider)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
+
+---
+
+## Authentication
+
+The dashboard uses **OAuth 2.0 (Google)** for sign-in, bridged to short-lived **JWT** access/refresh tokens for API calls.
+
+### Flow
+
+```
+┌──────────┐        1. Sign in with Google        ┌──────────────┐
+│  Browser │ ────────────────────────────────────▶│    Google    │
+│ (Next.js)│◀──────────────────────────────────── │  OAuth 2.0   │
+└────┬─────┘        2. id_token (OIDC)             └──────────────┘
+     │
+     │ 3. POST /api/auth/google/ { id_token }
+     ▼
+┌──────────────────────────────────────────────┐
+│ Django (apps.accounts.views.GoogleLoginView)  │
+│  - verifies id_token signature & audience      │
+│    against GOOGLE_CLIENT_ID (google-auth)      │
+│  - get_or_create User by verified email        │
+│  - issues SimpleJWT access + refresh tokens     │
+└────────────────┬───────────────────────────────┘
+                 │ 4. { access, refresh, user }
+                 ▼
+        NextAuth session (lib/auth.ts) stores
+        the Django access token, attached as
+        `Authorization: Bearer <token>` on every
+        API request (lib/api.ts).
+```
+
+1. The user clicks **Continue with Google** on `/login` (`next-auth` `signIn("google")`).
+2. NextAuth completes the Google OAuth 2.0 / OIDC handshake in the browser and receives an `id_token`.
+3. NextAuth's `jwt` callback (`frontend/lib/auth.ts`) forwards that `id_token` to the Django backend at `POST /api/auth/google/`.
+4. Django verifies the token's signature and audience directly with Google (no client secret exchange needed for this leg), creates the user on first login, and returns a SimpleJWT `access`/`refresh` pair plus the user's profile.
+5. The access token is stored in the NextAuth session and attached to every subsequent API request; `POST /api/auth/token/refresh/` is used to renew it.
+
+### Setting up Google OAuth credentials
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create an **OAuth 2.0 Client ID** (Web application).
+2. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google` (adjust the host for staging/prod).
+3. Copy the generated Client ID / Secret into both env files:
+   - `backend/.env`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (used to verify the token audience).
+   - `frontend/.env.local`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (used by the NextAuth provider), plus `NEXTAUTH_URL` and a random `NEXTAUTH_SECRET`.
 
 ---
 
@@ -346,8 +399,10 @@ The REST API is fully documented via Swagger UI at `/api/schema/swagger-ui`.
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `POST` | `/api/auth/google/` | Google OAuth login | No |
+| `POST` | `/api/auth/google/` | Exchange a Google `id_token` for a Django JWT pair (creates the user on first login) | No |
+| `POST` | `/api/auth/token/` | Obtain a JWT pair via username/password | No |
 | `POST` | `/api/auth/token/refresh/` | Refresh JWT token | No |
+| `GET`/`PATCH` | `/api/auth/profile/` | Get or update the current user's profile | Yes |
 | `GET` | `/api/products/` | List all products | Yes |
 | `POST` | `/api/products/` | Create a product | Yes (Manufacturer) |
 | `GET` | `/api/products/{id}/` | Get product detail | Yes |
