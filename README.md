@@ -350,27 +350,22 @@ The dashboard uses **OAuth 2.0 (Google)** for sign-in, bridged to short-lived **
 
 ### Flow
 
-```
-┌──────────┐        1. Sign in with Google        ┌──────────────┐
-│  Browser │ ────────────────────────────────────▶│    Google    │
-│ (Next.js)│◀──────────────────────────────────── │  OAuth 2.0   │
-└────┬─────┘        2. id_token (OIDC)             └──────────────┘
-     │
-     │ 3. POST /api/auth/google/ { id_token }
-     ▼
-┌──────────────────────────────────────────────┐
-│ Django (apps.accounts.views.GoogleLoginView)  │
-│  - verifies id_token signature & audience      │
-│    against GOOGLE_CLIENT_ID (google-auth)      │
-│  - get_or_create User by verified email        │
-│  - issues SimpleJWT access + refresh tokens     │
-└────────────────┬───────────────────────────────┘
-                 │ 4. { access, refresh, user }
-                 ▼
-        NextAuth session (lib/auth.ts) stores
-        the Django access token, attached as
-        `Authorization: Bearer <token>` on every
-        API request (lib/api.ts).
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant B as Browser (Next.js)
+    participant G as Google OAuth 2.0
+    participant D as Django (GoogleLoginView)
+    participant N as NextAuth session
+
+    U->>B: Click "Continue with Google"
+    B->>G: 1. Sign in with Google
+    G-->>B: 2. id_token (OIDC)
+    B->>D: 3. POST /api/auth/google/ { id_token }
+    Note over D: verify id_token signature & audience<br/>against GOOGLE_CLIENT_ID (google-auth)<br/>get_or_create User by verified email<br/>issue SimpleJWT access + refresh tokens
+    D-->>B: 4. { access, refresh, user }
+    B->>N: store Django access token
+    Note over N: attached as Authorization: Bearer &lt;token&gt;<br/>on every API request (lib/api.ts)
 ```
 
 1. The user clicks **Continue with Google** on `/login` (`next-auth` `signIn("google")`).
