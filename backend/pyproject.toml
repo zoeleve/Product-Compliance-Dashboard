@@ -37,6 +37,9 @@ dev = [
     "responses>=0.25",
 ]
 
+[tool.setuptools.packages.find]
+include = ["apps*", "config*", "celery_app*"]
+
 [tool.black]
 line-length = 88
 target-version = ["py311"]
