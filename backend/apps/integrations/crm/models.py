@@ -18,11 +18,17 @@ class WebhookDeliveryLog(models.Model):
         SUCCESS = "SUCCESS", "Success"
         FAILED = "FAILED", "Failed"
 
-    webhook = models.ForeignKey(CrmWebhook, on_delete=models.CASCADE, related_name="delivery_logs")
-    compliance_record = models.ForeignKey(
-        "compliance.ComplianceRecord", on_delete=models.CASCADE, related_name="webhook_logs"
+    webhook = models.ForeignKey(
+        CrmWebhook, on_delete=models.CASCADE, related_name="delivery_logs"
     )
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.FAILED)
+    compliance_record = models.ForeignKey(
+        "compliance.ComplianceRecord",
+        on_delete=models.CASCADE,
+        related_name="webhook_logs",
+    )
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.FAILED
+    )
     attempts = models.IntegerField(default=0)
     last_attempted_at = models.DateTimeField(auto_now=True)
     response_code = models.IntegerField(null=True, blank=True)

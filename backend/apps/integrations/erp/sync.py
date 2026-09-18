@@ -1,5 +1,7 @@
 import logging
+
 from django.utils import timezone
+
 from .client import OdooClient
 from .mapper import OdooProductMapper
 from .models import ErpSyncLog
@@ -8,8 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 def sync_products_from_odoo() -> ErpSyncLog:
-    from apps.products.models import Product
     from django.contrib.auth import get_user_model
+
+    from apps.products.models import Product
+
     User = get_user_model()
 
     log = ErpSyncLog.objects.create(status="RUNNING")

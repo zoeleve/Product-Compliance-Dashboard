@@ -23,7 +23,9 @@ class ComplianceRecord(models.Model):
     regulation = models.ForeignKey(
         Regulation, on_delete=models.CASCADE, related_name="compliance_records"
     )
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING
+    )
     last_checked = models.DateTimeField(auto_now=True)
     notes = models.TextField(blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)

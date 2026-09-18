@@ -1,6 +1,7 @@
-from rest_framework import viewsets, permissions
-from .models import Regulation, ComplianceRecord
-from .serializers import RegulationSerializer, ComplianceRecordSerializer
+from rest_framework import permissions, viewsets
+
+from .models import ComplianceRecord, Regulation
+from .serializers import ComplianceRecordSerializer, RegulationSerializer
 
 
 class RegulationViewSet(viewsets.ReadOnlyModelViewSet):

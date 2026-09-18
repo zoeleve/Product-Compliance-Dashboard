@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+
 from apps.accounts.models import User
 
 
@@ -12,7 +13,9 @@ def test_google_login_creates_new_user(api_client):
         "given_name": "New",
         "family_name": "User",
     }
-    with patch("apps.accounts.views.google_id_token.verify_oauth2_token", return_value=payload):
+    with patch(
+        "apps.accounts.views.google_id_token.verify_oauth2_token", return_value=payload
+    ):
         response = api_client.post("/api/auth/google/", {"id_token": "dummy-token"})
 
     assert response.status_code == 201
@@ -25,7 +28,9 @@ def test_google_login_creates_new_user(api_client):
 @pytest.mark.django_db
 def test_google_login_existing_user_returns_200(api_client, viewer_user):
     payload = {"email": viewer_user.email, "email_verified": True}
-    with patch("apps.accounts.views.google_id_token.verify_oauth2_token", return_value=payload):
+    with patch(
+        "apps.accounts.views.google_id_token.verify_oauth2_token", return_value=payload
+    ):
         response = api_client.post("/api/auth/google/", {"id_token": "dummy-token"})
 
     assert response.status_code == 200
@@ -47,7 +52,9 @@ def test_google_login_invalid_token_rejected(api_client):
 @pytest.mark.django_db
 def test_google_login_unverified_email_rejected(api_client):
     payload = {"email": "unverified@test.com", "email_verified": False}
-    with patch("apps.accounts.views.google_id_token.verify_oauth2_token", return_value=payload):
+    with patch(
+        "apps.accounts.views.google_id_token.verify_oauth2_token", return_value=payload
+    ):
         response = api_client.post("/api/auth/google/", {"id_token": "dummy-token"})
 
     assert response.status_code == 401

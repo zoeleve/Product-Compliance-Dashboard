@@ -1,5 +1,5 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Notification(models.Model):
@@ -11,8 +11,11 @@ class Notification(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
     )
     product = models.ForeignKey(
-        "products.Product", on_delete=models.CASCADE,
-        related_name="notifications", null=True, blank=True,
+        "products.Product",
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        null=True,
+        blank=True,
     )
     message = models.TextField()
     notification_type = models.CharField(

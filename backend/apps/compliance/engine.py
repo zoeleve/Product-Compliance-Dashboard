@@ -1,4 +1,5 @@
 import logging
+
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -6,9 +7,9 @@ logger = logging.getLogger(__name__)
 
 class ComplianceEngine:
     def evaluate_product(self, product_id: int) -> None:
-        from apps.products.models import Product
-        from apps.compliance.models import Regulation, ComplianceRecord
+        from apps.compliance.models import ComplianceRecord, Regulation
         from apps.notifications.service import NotificationService
+        from apps.products.models import Product
 
         try:
             product = Product.objects.get(id=product_id)
@@ -33,7 +34,8 @@ class ComplianceEngine:
                 record.last_checked = timezone.now()
                 record.save()
                 logger.info(
-                    f"Product {product.name} | {regulation.code}: {old_status} -> {new_status}"
+                    f"Product {product.name} | {regulation.code}: "
+                    f"{old_status} -> {new_status}"
                 )
                 if new_status == ComplianceRecord.Status.NON_COMPLIANT:
                     msg = (
@@ -46,14 +48,16 @@ class ComplianceEngine:
 
     def _evaluate_status(self, product, regulation) -> str:
         from apps.compliance.models import ComplianceRecord
+
         # Placeholder: extend with real regulation-specific business rules
         if product.erp_id:
-            return ComplianceRecord.Status.COMPLIANT
-        return ComplianceRecord.Status.PENDING
+            return str(ComplianceRecord.Status.COMPLIANT)
+        return str(ComplianceRecord.Status.PENDING)
 
     def _dispatch_webhooks(self, compliance_record) -> None:
-        from apps.integrations.crm.models import CrmWebhook
         from apps.integrations.crm.dispatcher import WebhookDispatcher
+        from apps.integrations.crm.models import CrmWebhook
+
         dispatcher = WebhookDispatcher()
         for webhook in CrmWebhook.objects.filter(is_active=True):
             try:

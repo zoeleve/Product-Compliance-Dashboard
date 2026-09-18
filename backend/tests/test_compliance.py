@@ -1,4 +1,5 @@
 import pytest
+
 from apps.compliance.engine import ComplianceEngine
 from apps.compliance.models import ComplianceRecord
 
@@ -7,7 +8,9 @@ from apps.compliance.models import ComplianceRecord
 def test_engine_creates_compliance_record(sample_product, sample_regulation):
     engine = ComplianceEngine()
     engine.evaluate_product(sample_product.id)
-    assert ComplianceRecord.objects.filter(product=sample_product, regulation=sample_regulation).exists()
+    assert ComplianceRecord.objects.filter(
+        product=sample_product, regulation=sample_regulation
+    ).exists()
 
 
 @pytest.mark.django_db

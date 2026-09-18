@@ -1,13 +1,15 @@
-from celery import shared_task
 import logging
+
+from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(name="run_compliance_checks")
 def run_compliance_checks():
-    from apps.products.models import Product
     from apps.compliance.engine import ComplianceEngine
+    from apps.products.models import Product
+
     engine = ComplianceEngine()
     products = Product.objects.all()
     for product in products:
@@ -21,6 +23,7 @@ def run_compliance_checks():
 @shared_task(name="sync_erp_products")
 def sync_erp_products():
     from apps.integrations.erp.sync import sync_products_from_odoo
+
     try:
         sync_products_from_odoo()
     except Exception as e:
@@ -29,9 +32,11 @@ def sync_erp_products():
 
 @shared_task(name="retry_failed_webhooks")
 def retry_failed_webhooks():
-    from apps.integrations.crm.models import WebhookDeliveryLog
-    from apps.integrations.crm.dispatcher import WebhookDispatcher
     from django.conf import settings
+
+    from apps.integrations.crm.dispatcher import WebhookDispatcher
+    from apps.integrations.crm.models import WebhookDeliveryLog
+
     max_retries = getattr(settings, "CRM_WEBHOOK_MAX_RETRIES", 3)
     failed_logs = WebhookDeliveryLog.objects.filter(
         status="FAILED", attempts__lt=max_retries

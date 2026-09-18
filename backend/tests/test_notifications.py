@@ -1,12 +1,15 @@
 import pytest
-from apps.notifications.service import NotificationService
+
 from apps.notifications.models import Notification
+from apps.notifications.service import NotificationService
 
 
 @pytest.mark.django_db
 def test_send_in_app_notification(manufacturer_user, sample_product):
     NotificationService().send_in_app(manufacturer_user, sample_product, "Test alert")
-    assert Notification.objects.filter(user=manufacturer_user, message="Test alert").exists()
+    assert Notification.objects.filter(
+        user=manufacturer_user, message="Test alert"
+    ).exists()
 
 
 @pytest.mark.django_db

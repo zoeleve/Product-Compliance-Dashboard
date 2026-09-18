@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Regulation, ComplianceRecord
+
+from .models import ComplianceRecord, Regulation
 
 
 class RegulationSerializer(serializers.ModelSerializer):
@@ -15,7 +16,14 @@ class ComplianceRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComplianceRecord
         fields = [
-            "id", "product", "regulation", "regulation_code", "regulation_name",
-            "status", "last_checked", "notes", "expires_at",
+            "id",
+            "product",
+            "regulation",
+            "regulation_code",
+            "regulation_name",
+            "status",
+            "last_checked",
+            "notes",
+            "expires_at",
         ]
         read_only_fields = ["id", "last_checked"]

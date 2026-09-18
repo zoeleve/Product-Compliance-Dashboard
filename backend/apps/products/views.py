@@ -1,11 +1,17 @@
-from rest_framework import viewsets, permissions
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-from .models import Product, Category
-from .serializers import ProductDetailSerializer, ProductListSerializer, CategorySerializer
-from .filters import ProductFilter
+
 from apps.accounts.permissions import IsAdmin, IsManufacturer, IsOwnerOrAdmin
+
+from .filters import ProductFilter
+from .models import Category, Product
+from .serializers import (
+    CategorySerializer,
+    ProductDetailSerializer,
+    ProductListSerializer,
+)
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -42,8 +48,11 @@ class ProductViewSet(viewsets.ModelViewSet):
     def compliance(self, request, pk=None):
         from apps.compliance.models import ComplianceRecord
         from apps.compliance.serializers import ComplianceRecordSerializer
+
         product = self.get_object()
-        records = ComplianceRecord.objects.filter(product=product).select_related("regulation")
+        records = ComplianceRecord.objects.filter(product=product).select_related(
+            "regulation"
+        )
         return Response(ComplianceRecordSerializer(records, many=True).data)
 
 

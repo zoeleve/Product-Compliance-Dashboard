@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from celery_app.tasks import run_compliance_checks, sync_erp_products
 
 

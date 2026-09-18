@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -151,7 +152,9 @@ CACHES = {
 }
 
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = config(
+    "CELERY_RESULT_BACKEND", default="redis://localhost:6379/0"
+)
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -168,5 +171,7 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
 
 ERP_SYNC_INTERVAL_MINUTES = config("ERP_SYNC_INTERVAL_MINUTES", default=60, cast=int)
-CRM_WEBHOOK_TIMEOUT_SECONDS = config("CRM_WEBHOOK_TIMEOUT_SECONDS", default=10, cast=int)
+CRM_WEBHOOK_TIMEOUT_SECONDS = config(
+    "CRM_WEBHOOK_TIMEOUT_SECONDS", default=10, cast=int
+)
 CRM_WEBHOOK_MAX_RETRIES = config("CRM_WEBHOOK_MAX_RETRIES", default=3, cast=int)

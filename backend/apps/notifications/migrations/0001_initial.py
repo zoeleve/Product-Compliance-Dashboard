@@ -13,23 +13,41 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="Notification",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False
+                    ),
+                ),
                 ("message", models.TextField()),
-                ("notification_type", models.CharField(
-                    choices=[("IN_APP","In-App"),("EMAIL","Email")],
-                    default="IN_APP", max_length=10,
-                )),
+                (
+                    "notification_type",
+                    models.CharField(
+                        choices=[("IN_APP", "In-App"), ("EMAIL", "Email")],
+                        default="IN_APP",
+                        max_length=10,
+                    ),
+                ),
                 ("is_read", models.BooleanField(default=False)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("product", models.ForeignKey(
-                    blank=True, null=True,
-                    on_delete=django.db.models.deletion.CASCADE,
-                    related_name="notifications", to="products.product",
-                )),
-                ("user", models.ForeignKey(
-                    on_delete=django.db.models.deletion.CASCADE,
-                    related_name="notifications", to=settings.AUTH_USER_MODEL,
-                )),
+                (
+                    "product",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="notifications",
+                        to="products.product",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="notifications",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={"ordering": ["-created_at"]},
         ),

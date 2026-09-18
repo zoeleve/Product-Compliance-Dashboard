@@ -1,5 +1,6 @@
-import requests
 import logging
+
+import requests
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -8,13 +9,18 @@ logger = logging.getLogger(__name__)
 class WebhookDispatcher:
     def dispatch(self, webhook, compliance_record, existing_log=None) -> None:
         from apps.integrations.crm.models import WebhookDeliveryLog
+
         timeout = getattr(settings, "CRM_WEBHOOK_TIMEOUT_SECONDS", 10)
         payload = self._build_payload(webhook, compliance_record)
-        log = existing_log or WebhookDeliveryLog(webhook=webhook, compliance_record=compliance_record)
+        log = existing_log or WebhookDeliveryLog(
+            webhook=webhook, compliance_record=compliance_record
+        )
         log.attempts += 1
         try:
             response = requests.post(
-                webhook.url, json=payload, timeout=timeout,
+                webhook.url,
+                json=payload,
+                timeout=timeout,
                 headers={"X-Webhook-Secret": webhook.secret} if webhook.secret else {},
             )
             log.response_code = response.status_code

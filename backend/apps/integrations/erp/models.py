@@ -9,7 +9,9 @@ class ErpSyncLog(models.Model):
 
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.RUNNING)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.RUNNING
+    )
     records_synced = models.IntegerField(default=0)
     error_message = models.TextField(blank=True)
 

@@ -1,7 +1,9 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from apps.integrations.erp.views import ErpSyncView, ErpStatusView
+
 from apps.accounts.views import GoogleLoginView, UserProfileView
+from apps.integrations.erp.views import ErpStatusView, ErpSyncView
+
 from .routers import router
 
 urlpatterns = [
