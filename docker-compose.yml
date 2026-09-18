@@ -69,7 +69,9 @@ services:
       - db
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: builder
     command: npm run dev
     volumes:
       - ./frontend:/app
